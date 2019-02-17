@@ -4,7 +4,7 @@ FROM nvidia/cuda:9.0-cudnn7-devel
 # https://docs.docker.com/engine/examples/running_ssh_service/
 RUN apt-get update && apt-get install -y openssh-server
 RUN mkdir /var/run/sshd
-RUN echo 'root:Ubuntu@41' | chpasswd
+RUN echo 'root:some_pass' | chpasswd
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 RUN mkdir ~/.ssh/
