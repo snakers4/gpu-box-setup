@@ -1,5 +1,5 @@
 # add 7z tar and zip archivers
-FROM nvidia/cuda:9.0-cudnn7-devel
+FROM nvidia/cuda:10.0-cudnn7-devel
 
 # https://docs.docker.com/engine/examples/running_ssh_service/
 RUN apt-get update && apt-get install -y openssh-server
@@ -28,13 +28,13 @@ RUN mkdir -p $CONDA_DIR && \
     echo export PATH=$CONDA_DIR/bin:'$PATH' > /etc/profile.d/conda.sh && \
     apt-get update && \
     apt-get install -y wget git libhdf5-dev g++ graphviz openmpi-bin nano && \
-    wget --quiet https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh && \
-    echo "c59b3dd3cad550ac7596e0d599b91e75d88826db132e4146030ef471bb434e9a *Miniconda3-4.2.12-Linux-x86_64.sh" | sha256sum -c - && \
-    /bin/bash /Miniconda3-4.2.12-Linux-x86_64.sh -f -b -p $CONDA_DIR && \
+    wget --quiet https://repo.continuum.io/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh && \
+    echo "866ae9dff53ad0874e1d1a60b1ad1ef8 *Miniconda3-4.5.12-Linux-x86_64.sh" | md5sum -c - && \
+    /bin/bash /Miniconda3-4.5.12-Linux-x86_64.sh -f -b -p $CONDA_DIR && \
     ln /usr/lib/x86_64-linux-gnu/libcudnn.so /usr/local/cuda/lib64/libcudnn.so && \
     ln /usr/lib/x86_64-linux-gnu/libcudnn.so.7 /usr/local/cuda/lib64/libcudnn.so.7 && \
     ln /usr/include/cudnn.h /usr/local/cuda/include/cudnn.h  && \
-    rm Miniconda3-4.2.12-Linux-x86_64.sh
+    rm Miniconda3-4.5.12-Linux-x86_64.sh
 
 ENV NB_USER keras
 ENV NB_UID 1000
@@ -51,14 +51,14 @@ RUN echo "export KERAS_BACKEND=tensorflow" >> /etc/profile
 
 RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
     mkdir -p $CONDA_DIR && \
-    chown keras $CONDA_DIR -R  
+    chown keras $CONDA_DIR -R
 
 USER keras
 
 RUN  mkdir -p /home/keras/notebook
 
 # Python
-ARG python_version=3.6
+ARG python_version=3.7
 
 RUN conda install -y python=${python_version} && \
     pip install --upgrade pip && \
@@ -66,7 +66,7 @@ RUN conda install -y python=${python_version} && \
     conda install Pillow scikit-learn notebook pandas matplotlib mkl nose pyyaml six h5py && \
     conda install theano pygpu bcolz && \
     pip install keras kaggle-cli lxml opencv-python requests scipy tqdm visdom && \
-    conda install pytorch=0.4.1 cuda90 -c pytorch && \
+    conda install pytorch torchvision cudatoolkit=10.0 -c pytorch && \
     conda install torchvision -c pytorch && \
     pip install imgaug tensorboardX && \
     pip install tabulate sqlalchemy pymysql seaborn natasha pymorphy2 telethon PySocks pymorphy2 transliterate matplotlib-venn sentencepiece ftfy && \
@@ -77,10 +77,12 @@ RUN conda install -y python=${python_version} && \
     conda install datashader && \
     conda install -c conda-forge hdbscan && \
     pip install git+https://github.com/facebookresearch/fastText.git && \
-    conda clean -yt && \
     conda install -c conda-forge osmnx && \
     conda install -c conda-forge geopandas && \
-    conda install notebook=5.6
+    conda install notebook=5.6 && \
+    conda install feather-format -c conda-forge && \
+    conda clean -yt
+
 
 RUN pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions && \
     jupyter contrib nbextension install --user
