@@ -207,8 +207,12 @@ Ports forwarded for DS / ML work:
 - Jupyter ports `8882` `8883` `8884`;
 - TensorBoard ports `6001` `6002` `6003`;
 
-# **Prometheus**
 ## Download and install
+### Possible options:
+
+### 1) Download precompiled versions from *https://prometheus.io/download/*
+
+### 2) Hard way, build everything yourself
 #### 1. [Prometheus](https://github.com/prometheus/prometheus):
 ```
 $ mkdir -p $GOPATH/src/github.com/prometheus
@@ -357,13 +361,14 @@ groups:
 ```
 
 ## Run everything
-these commands will run prometheus on a local 9092 port (using above .yml files)
+I use this .sh script to run everything at once
 ```
-$ ./node_exporter  # default port 9100
-# gpu metrics
-$ nvidia-docker run -p 9445:9445 -ti mindprince/nvidia_gpu_prometheus_exporter:0.1
-$ ./alertmanager --config.file=alertmanager.yml # default port 9093
-$ ./prometheus --config.file=./prometheus.yml --web.listen-address="0.0.0.0:9092"
+#!/bin/bash
+cd node_exporter-0.18.1.linux-amd64/ && ./node_exporter \
+& nvidia-docker run -p 9445:9445 -ti mindprince/nvidia_gpu_prometheus_exporter:0.1 \
+& cd alertmanager-0.17.0.linux-amd64/ && ./alertmanager --config.file=alertmanager.yml \
+& cd prometheus-2.10.0.linux-amd64/ && ./prometheus --config.file=./prometheus.yml --web.listen-address="0.0.0.0:9092" \
 
 ```
+
 
