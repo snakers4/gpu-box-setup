@@ -189,7 +189,7 @@ Make sure that both devices have no IP allocated (i.e. they are NOT primary Inte
 Machines
 ```
 sudo ip ad add 10.0.0.10/24 dev enp7s0
-sudo ip ad add 10.0.0.20/24 dev p2p2
+sudo ip ad add 10.0.0.20/24 dev p2p1
 ```
 
 ```
@@ -207,7 +207,65 @@ Ports forwarded for DS / ML work:
 - Jupyter ports `8882` `8883` `8884`;
 - TensorBoard ports `6001` `6002` `6003`;
 
+# LVM array on the second box
 
+https://www.digitalocean.com/community/tutorials/how-to-use-lvm-to-manage-storage-devices-on-ubuntu-18-04
+
+## Device level
+see all compatible drives
+`sudo lvmdiskscan`
+
+lvm physical devices
+```
+sudo lvmdiskscan -l
+sudo pvscan
+sudo pvs
+sudo pvdisplay
+```
+
+## Volume groups
+The vgscan command can be used to scan the system for available volume groups.
+It also rebuilds the cache file when necessary.
+It is a good command to use when you are importing a volume group into a new system
+```
+sudo vgscan
+sudo vgs -o +devices,lv_path
+sudo vgdisplay -v
+```
+
+logical volumes
+```
+sudo lvscan
+sudo lvs
+sudo lvs --segments
+sudo lvdisplay -m
+```
+
+## Create
+```
+sudo pvcreate /dev/nvme0n1p1 /dev/nvme1n1p1
+# sudo pvremove
+sudo lvmdiskscan -l
+```
+```
+# WARNING: only considering LVM devices
+# /dev/nvme0n1p1 [     931.51 GiB] LVM physical volume
+# /dev/nvme1n1p1 [     931.51 GiB] LVM physical volume
+# 0 LVM physical volume whole disks
+# 2 LVM physical volumes
+```
+ttps://www.howtoforge.com/linux_lvm_p2
+```
+sudo vgcreate nvme_drives /dev/nvme0n1p1 /dev/nvme1n1p1
+# vgrename fileserver data
+sudo lvcreate --name nvme_lv --size 1.8T nvme_drives
+```
+
+## Creating FS and mounting
+```
+sudo mkfs.ext4 /dev/nvme_drives/nvme_lv
+sudo mount /dev/nvme_drives/nvme_lv /mnt/nvme
+```
 
 # Prometheus
 ## Download and install
