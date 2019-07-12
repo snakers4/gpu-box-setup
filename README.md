@@ -405,6 +405,12 @@ groups:
     for: 5m
     annotations:
         description: "{{ $value }} space available on /mnt/nvme!"
+  
+  - alert: SDE1_MEM
+    expr: round(node_filesystem_avail_bytes{device="/dev/sde1"} / 1024 / 1024 / 1024) < 5
+    for: 5m
+    annotations:
+        description: "{{ $value }} space available on SDE1!"
 
   - alert: MD
    # Fire when disk is not available
@@ -422,7 +428,7 @@ groups:
 ```
 
 ## Run everything
-I use this .sh script to run everything at once
+I use this .sh script in tmux to run everything at once
 ```
 #!/bin/bash
 cd node_exporter-0.18.1.linux-amd64/ && ./node_exporter \
@@ -432,4 +438,10 @@ cd node_exporter-0.18.1.linux-amd64/ && ./node_exporter \
 
 ```
 
+## kill everything 
+`ctrl+c` in tmux session stops processes
+to make sure everything is off use
+`pgrep -f "alertmanager|node_exporter|prometheus"` and then `kill -TERM` processes
+
+Nvidia_gpu_prometheus_exporter can be closed by shutting down docker container
 
