@@ -440,6 +440,7 @@ cd node_exporter-0.18.1.linux-amd64/ && ./node_exporter \
 
 ## kill everything 
 `ctrl+c` in tmux session stops processes
+
 to make sure everything is off use
 `pgrep -f "alertmanager|node_exporter|prometheus"` and then `kill -TERM` processes
 
