@@ -463,7 +463,7 @@ Host example-remote-linux-machine-with-identity-file
     User keras
     HostName 127.0.0.1
     Port 8022
-    IdentityFile D:\CATS\ARE\FLUFFY\picsart_priv.ppk
+    IdentityFile D:\CATS\ARE\FLUFFY\private_key_in_open_ssh_format.ppk
 ```
 -- You will have the following problems on Windows 10
 --- You will have to create USER/.ssh folder
@@ -472,3 +472,5 @@ Host example-remote-linux-machine-with-identity-file
 - **Useful extensions I think are important**
 -- Python
 -- Linting (flake 8)
+- **Open SSH format**
+-- If you use PuTTY to create keys - you may need to use PyTTYgen to change the format of the key to open-ssh standard format
