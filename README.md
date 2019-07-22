@@ -446,3 +446,29 @@ to make sure everything is off use
 
 Nvidia_gpu_prometheus_exporter can be closed by shutting down docker container
 
+# Use VsCode remote ssh development on WINDOWS 10
+- **Docker: set up port forwarding and docker container ports:**
+-- E.g. My port is 8022
+-- Router port forwardng (i.e. your port will be 8023) or local ssh tunnel, i.e. `127.0.0.1 => 8023`
+-- Expose port within Docker container in EXPOSE
+-- Do Docker port forwarding when launching a container, i.e. -p 8023:22
+-- Turn on ssh Daemon within container (service ssh start), test it, should be done each time. See Dockerfiles
+-- Create /keras/.ssh/authorized_keys file and paste your public key there within the container
+- **VScode setup on windows**
+-- Download, install VScode (it said that you [needed](https://code.visualstudio.com/docs/remote/remote-overview) their bleeding edge build, but normal build works as well now);
+-- Install ssh remote development plugin;
+-- Create VScode ssh config (had to google their forums)
+```
+Host example-remote-linux-machine-with-identity-file
+    User keras
+    HostName 127.0.0.1
+    Port 8022
+    IdentityFile D:\CATS\ARE\FLUFFY\picsart_priv.ppk
+```
+-- You will have the following problems on Windows 10
+--- You will have to create USER/.ssh folder
+--- You will have to set up permissions like in this comment (https://superuser.com/a/1329702) for the ssh private key file
+--- Some other similar fail, I do not remember
+- **Useful extensions I think are important**
+-- Python
+-- Linting (flake 8)
