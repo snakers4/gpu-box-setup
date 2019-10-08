@@ -1,4 +1,4 @@
-FROM aveysov/ml_images:layer-0
+FROM aveysov/ml_images:layer-0-pt12
 
 
 RUN conda install Pillow scikit-learn notebook pandas matplotlib mkl nose pyyaml six h5py && \
