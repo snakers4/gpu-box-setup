@@ -31,14 +31,14 @@
       - [3. alert_rules.yml](#3-alert_rulesyml)
   - [Run everything](#run-everything)
   - [kill everything](#kill-everything)
-- [Use VsCode remote ssh development on WINDOWS 10](#use-vscode-remote-ssh-development-on-windows-10)
-- [**Disk maintenance**](#disk-maintenance)
+- [**Use VsCode remote ssh development on WINDOWS 10**](#use-vscode-remote-ssh-development-on-windows-10)
+- [**Advanced disk maintenance**](#advanced-disk-maintenance)
   - [**Create mount points and create disks**](#create-mount-points-and-create-disks)
   - [**Move docker folder**](#move-docker-folder)
   - [**Raid arrays**](#raid-arrays)
   - [**Disk encryption**](#disk-encryption)
   - [**Prevent docker daemon from loading**](#prevent-docker-daemon-from-loading)
-- [Email notifications](#email-notifications)
+- [**Email notifications**](#email-notifications)
 
 # **Box specs and assembly**
 
@@ -182,8 +182,8 @@ docker rmi $(docker images -q)
 
 ## **Nvidia-docker 2**
 
-
 Just follow [here](https://github.com/NVIDIA/nvidia-docker)
+Recently there was a rehaul of the docs - https://github.com/NVIDIA/nvidia-docker
 
 Add the package repositories:
 ```
@@ -490,7 +490,7 @@ to make sure everything is off use
 
 Nvidia_gpu_prometheus_exporter can be closed by shutting down docker container
 
-# Use VsCode remote ssh development on WINDOWS 10
+# **Use VsCode remote ssh development on WINDOWS 10**
 
 - **Docker: set up port forwarding and docker container ports:**
 -- E.g. My port is 8022
@@ -520,8 +520,7 @@ Host example-remote-linux-machine-with-identity-file
 - **Open SSH format**
 -- If you use PuTTY to create keys - you may need to use PyTTYgen to change the format of the key to open-ssh standard format
 
-
-# **Disk maintenance**
+# **Advanced disk maintenance**
 
 ## **Create mount points and create disks**
 
@@ -564,7 +563,6 @@ Do this after encryption
 sudo nano /lib/systemd/system/docker.service
 sudo reboot now
 ```
-
 
 ## **Raid arrays**
 
@@ -636,7 +634,7 @@ sudo systemctl status docker
 ```
 
 
-# Email notifications
+# **Email notifications**
 
 ```
 sudo apt-get install ssmtp
