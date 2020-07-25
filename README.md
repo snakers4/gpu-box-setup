@@ -1,3 +1,45 @@
+
+- [**Box specs and assembly**](#box-specs-and-assembly)
+- [**Basic steps after installing Ubuntu**](#basic-steps-after-installing-ubuntu)
+  - [**Creating users and importing their keys**](#creating-users-and-importing-their-keys)
+  - [**Basic monitoring and productivity**](#basic-monitoring-and-productivity)
+  - [**Installing NVIDIA drivers**](#installing-nvidia-drivers)
+  - [**Mounting drives**](#mounting-drives)
+- [**Tools for DL environment**](#tools-for-dl-environment)
+  - [**Docker CE**](#docker-ce)
+  - [**Nvidia-docker 2**](#nvidia-docker-2)
+  - [**Basic dockerfile**](#basic-dockerfile)
+- [**Connect to other cluster machines via 10 Gb/s LAN**](#connect-to-other-cluster-machines-via-10-gbs-lan)
+- [**Port forwarding / ports available**](#port-forwarding--ports-available)
+- [LVM array on the second box](#lvm-array-on-the-second-box)
+  - [Device level](#device-level)
+  - [Volume groups](#volume-groups)
+  - [Create](#create)
+  - [Creating FS and mounting](#creating-fs-and-mounting)
+- [Prometheus](#prometheus)
+  - [Download and install](#download-and-install)
+    - [Possible options:](#possible-options)
+    - [1) Download precompiled versions from *https://prometheus.io/download/*](#1-download-precompiled-versions-from-httpsprometheusiodownload)
+    - [2) Hard way, build everything yourself](#2-hard-way-build-everything-yourself)
+      - [1. Prometheus:](#1-prometheus)
+      - [2. Alertmanager:](#2-alertmanager)
+      - [3. Node_exporter:](#3-node_exporter)
+      - [4. Nvidia_gpu_prometheus_exporter:](#4-nvidia_gpu_prometheus_exporter)
+  - [Yaml files](#yaml-files)
+      - [1. prometheus.yml](#1-prometheusyml)
+      - [2. alertmanager.yml](#2-alertmanageryml)
+      - [3. alert_rules.yml](#3-alert_rulesyml)
+  - [Run everything](#run-everything)
+  - [kill everything](#kill-everything)
+- [Use VsCode remote ssh development on WINDOWS 10](#use-vscode-remote-ssh-development-on-windows-10)
+- [**Disk maintenance**](#disk-maintenance)
+  - [**Create mount points and create disks**](#create-mount-points-and-create-disks)
+  - [**Move docker folder**](#move-docker-folder)
+  - [**Raid arrays**](#raid-arrays)
+  - [**Disk encryption**](#disk-encryption)
+  - [**Prevent docker daemon from loading**](#prevent-docker-daemon-from-loading)
+- [Email notifications](#email-notifications)
+
 # **Box specs and assembly**
 
 - 1+ Nvidia 1080Ti GPUs (any modern Nvidia GPUs are ok);
@@ -24,18 +66,20 @@ Optionally use a plain firewall with `ufw`.
 
 A group for all of the users to share folders:
 ```
-sudo addgroup ds
+sudo addgroup ds && \
+sudo groupadd docker
 ```
 Create a user and perform basic tasks with this user (note that I am using a github alias):
 ```
 USER="YOUR_USER" && \
 GROUP='ds' && \
-sudo useradd $USER && \
+sudo useradd $USER -s /bin/bash -m && \
 sudo adduser $USER $GROUP && \
 sudo mkdir -p /home/$USER/.ssh/ && \
 sudo touch /home/$USER/.ssh/authorized_keys && \
 sudo chown -R $USER:$USER /home/$USER/.ssh/ && \
-sudo wget -O - https://github.com/$USER.keys | sudo tee -a /home/$USER/.ssh/authorized_keys
+sudo wget -O - https://github.com/$USER.keys | tail -n 1 | sudo tee -a /home/$USER/.ssh/authorized_keys && \
+sudo adduser $USER docker
 # sudo adduser $USER sudo
 ```
 
@@ -447,6 +491,7 @@ to make sure everything is off use
 Nvidia_gpu_prometheus_exporter can be closed by shutting down docker container
 
 # Use VsCode remote ssh development on WINDOWS 10
+
 - **Docker: set up port forwarding and docker container ports:**
 -- E.g. My port is 8022
 -- Router port forwardng (i.e. your port will be 8023) or local ssh tunnel, i.e. `127.0.0.1 => 8023`
@@ -474,3 +519,186 @@ Host example-remote-linux-machine-with-identity-file
 -- Linting (flake 8)
 - **Open SSH format**
 -- If you use PuTTY to create keys - you may need to use PyTTYgen to change the format of the key to open-ssh standard format
+
+
+# **Disk maintenance**
+
+## **Create mount points and create disks**
+
+**Create mountpoints:**
+
+```
+sudo mkdir /mnt/nvme
+sudo mkdir /mnt/docker
+sudo mkdir /mnt/dump
+```
+
+**Create a new partition on an nvme drive:**
+
+Just an example. Do not follow this blindly.
+
+```
+sudo fdisk /dev/nvme1n1
+# n 4 w
+sudo fdisk /dev/nvme0n1
+# n p 1 w
+sudo mkfs -t ext4 /dev/nvme0n1p1
+sudo mkfs -t ext4 /dev/nvme1n1p4
+sudo  mount /dev/nvme0n1p1 /mnt/nvme
+sudo  mount /dev/nvme1n1p4 /mnt/docker
+sudo blkid /dev/nvme0n1p1
+sudo echo 'UUID=bf373684-6885-4443-a809-d881a788a716 /mnt/nvme ext4 defaults 0 0' | sudo tee -a /etc/fstab
+sudo blkid /dev/nvme1n1p4
+sudo echo 'UUID=183135fb-4849-485f-84aa-afb53ad9ad40 /mnt/docker ext4 defaults 0 0' | sudo tee -a /etc/fstab
+sudo mount -a
+```
+
+## **Move docker folder**
+
+Just an example. Do not follow this blindly.
+
+[Guide](https://medium.com/developer-space/how-to-change-docker-data-folder-configuration-33d372669056) and this [guide](https://stackoverflow.com/questions/24309526/how-to-change-the-docker-image-installation-directory/34731550#34731550)
+
+Do this after encryption
+```
+sudo nano /lib/systemd/system/docker.service
+sudo reboot now
+```
+
+
+## **Raid arrays**
+
+As usual this guide [used](https://www.digitalocean.com/community/tutorials/how-to-create-raid-arrays-with-mdadm-on-ubuntu-18-04).
+
+```
+sudo lsblk -o NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT
+sudo mdadm --create --verbose /dev/md0 --level=10 --raid-devices=4 /dev/sda /dev/sdb /dev/sdc /dev/sdd
+cat /proc/mdstat
+sudo mkfs.ext4 -F /dev/md0
+sudo mkdir -p /mnt/dump
+sudo mount /dev/md0 /mnt/dump
+df -h -x devtmpfs -x tmpfs
+sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
+echo '/dev/md0 /mnt/dump ext4 defaults,nofail,discard 0 0' | sudo tee -a /etc/fstab
+```
+
+## **Disk encryption**
+
+```
+sudo cryptsetup luksFormat --hash=sha512 --key-size=512 /dev/nvme1n1p1
+sudo cryptsetup open --type=luks /dev/nvme1n1p1 nvme
+
+sudo cryptsetup luksFormat --hash=sha512 --key-size=512 /dev/nvme0n1p4
+sudo cryptsetup open --type=luks /dev/nvme0n1p4 docker
+
+sudo pvcreate /dev/mapper/nvme
+sudo vgcreate vg_nvme /dev/mapper/nvme
+sudo lvcreate -n lv_nvme -l 100%FREE vg_nvme
+
+sudo pvcreate /dev/mapper/docker
+sudo vgcreate vg_docker /dev/mapper/docker
+sudo lvcreate -n lv_docker -l 100%FREE vg_docker
+
+sudo blkid /dev/nvme1n1p1
+# /dev/nvme1n1p1: UUID="d75379aa-b095-4a3c-8fbf-218ebaf58675" TYPE="crypto_LUKS" PARTUUID="8ec6a65f-01"
+
+sudo blkid /dev/nvme0n1p4
+# /dev/nvme0n1p4: UUID="742a0a03-df61-4d9c-9308-26a4978dc55c" TYPE="crypto_LUKS" PARTUUID="3c5febf7-d09c-f54a-ab5b-c581322abaf5"
+
+sudo mkfs.ext4 /dev/vg_docker/lv_docker
+sudo mkfs.ext4 /dev/vg_nvme/lv_nvme
+
+sudo mount /dev/vg_docker/lv_docker /mnt/docker
+sudo mount /dev/vg_nvme/lv_nvme /mnt/nvme
+
+sudo nano /etc/crypttab
+nvme UUID=d75379aa-b095-4a3c-8fbf-218ebaf58675 none luks,discard
+docker UUID=742a0a03-df61-4d9c-9308-26a4978dc55c none luks,discard
+
+sudo blkid /dev/vg_docker/lv_docker
+sudo blkid /dev/vg_nvme/lv_nvme
+
+# this causes malfunction on boot
+# because disk password prompt is on boot in console
+sudo echo 'UUID=6502c02d-b7fe-4c1a-872c-6cabcc204c40 /mnt/nvme ext4 defaults 0 0' | sudo tee -a /etc/fstab
+sudo echo 'UUID=07faea3b-53bd-4ccc-ae64-ba34d4a14616 /mnt/docker ext4 defaults 0 0' | sudo tee -a /etc/fstab
+
+```
+
+## **Prevent docker daemon from loading**
+
+Because otherwise it will cause trouble with encrypted non-mounted disks
+
+```
+sudo systemctl disable docker.socket
+sudo systemctl disable docker.service
+sudo systemctl status docker
+```
+
+
+# Email notifications
+
+```
+sudo apt-get install ssmtp
+nano /etc/ssmtp/ssmtp.conf
+```
+
+Or just look up the config in other servers
+
+```
+# some rubbish email
+#
+# START CONFIG
+# Config file for sSMTP sendmail
+#
+# The person who gets all mail for userids < 1000
+# Make this empty to disable rewriting.
+# root=postmaster
+root=gmail-addresscom
+# The place where the mail goes. The actual machine name is required no
+# MX records are consulted. Commonly mailhosts are named mail.domain.com
+# mailhub=mail
+mailhub=smtp.gmail.com:587
+AuthUser=gmail-addresscom
+AuthPass=your_pass
+UseTLS=YES
+UseSTARTTLS=YES
+# Where will the mail seem to come from?
+rewriteDomain=gmail.com
+# The full hostname
+# hostname=snakers41-ubuntu
+# not sure about what this line means
+hostname=localhost
+# Are users allowed to set their own From: address?
+# YES - Allow the user to specify their own From: address
+# NO - Use the system generated From: address
+FromLineOverride=YES
+# END CONFIG
+
+# IMPORTANT - turn on less secure apps in google account settings
+# https://support.google.com/accounts/answer/6010255
+```
+
+Test email notifications
+```
+echo "Test message from Linux server using ssmtp" | sudo ssmtp -vvv destination-email-address@some-domain.com
+```
+
+Or a more detailed email
+```
+echo "Test message from Linux server using ssmtp" | sudo ssmtp -vvv aveysov@gmail.com
+
+{
+    echo To: nurtdinovadf@gmail.com
+    echo From: aveysov@gmail.com
+    echo Subject: The cat is on the mat!
+    echo Testing email
+} | ssmtp -vvv nurtdinovadf@gmail.com
+```
+
+Setup mdadm email notifications
+
+```
+sudo nano /etc/mdadm.conf # add email here
+sudo mdadm --monitor --scan --test -1
+```
