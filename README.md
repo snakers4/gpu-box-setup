@@ -221,7 +221,7 @@ Key dependencies:
 - Basic DS / ML libraries;
 
 
-# **Connect to other cluster machines via 10 Gb/s LAN**
+# **OBSOLETE Connect to other cluster machines via 10 Gb/s LAN**
 
 Have 2 machines with 10 Gbit/s port. Connect them via `6A` class patch-cord.
 
@@ -700,3 +700,37 @@ Setup mdadm email notifications
 sudo nano /etc/mdadm.conf # add email here
 sudo mdadm --monitor --scan --test -1
 ```
+
+
+# **Networking all the cluster machines via 10 Gb/s LAN**
+
+
+Connect all machines in the cluster via 10 Gbit/s LAN via a switch.
+Apply the following netplan config (i.e. `cat /etc/netplan/conf.yaml`)
+
+At first note the interfaces on each box, i.e. `ip a`, write down the 10 Gbit/s interface and a slower interface
+
+```
+network:
+  ethernets:
+    p2p1:
+      dhcp4: no
+      dhcp6: no
+      addresses:
+        - 192.168.2.4/24
+      optional: true
+    p2p2:
+      dhcp4: true
+      optional: true
+  version: 2
+```
+
+Then
+```
+sudo netplan try
+```
+
+
+Test [speed](https://www.cyberciti.biz/faq/how-to-test-the-network-speedthroughput-between-two-linux-servers/).
+
+
